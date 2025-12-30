@@ -1,0 +1,16 @@
+#' Example binary longitudinal dataset (small)
+#'
+#' A toy dataset in the required wide format: an n x (2d) matrix.
+#' The first d columns are individual 1 across time, the next d columns are individual 2.
+#'
+#' @format A list with:
+#' \describe{
+#'   \item{y}{Numeric matrix, n x (2d). Columns: i1_t01..i1_t{d}, i2_t01..i2_t{d}.}
+#'   \item{times}{Numeric vector length d.}
+#'   \item{d_single}{Integer, number of time points per individual.}
+#'   \item{order}{Integer, fixed at 4 in this package setting.}
+#'   \item{truth}{List containing J_true and z_true for quick validation.}
+#' }
+#'
+#' @usage data(example_binary)
+"example_binary"
