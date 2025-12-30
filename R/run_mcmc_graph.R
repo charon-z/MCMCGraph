@@ -26,6 +26,7 @@ run_mcmc_binary <- function(
     priors = list(alpha_v = 1, beta_v = 1, mu_phi = 0.25, eta_phi = 1, sigma_beta = 0.5),
     seed = 123
 ) {
+  .mcmcgraph_register_sad()
   format <- match.arg(format)
   if (!requireNamespace("nimble", quietly = TRUE)) stop("Package 'nimble' is required.")
   if (!requireNamespace("coda", quietly = TRUE)) stop("Package 'coda' is required.")
