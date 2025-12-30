@@ -58,8 +58,7 @@ run_mcmc_binary <- function(
   mu_beta <- as.numeric(solve(XTX + diag(1e-6, P), XTy))
 
   # register distribution (one-time)
-  .register_sad_once()
-
+  .mcmcgraph_register_sad()
 
   # model code (P fixed=10, but we keep P for safety)
   modelCode <- nimble::nimbleCode({
