@@ -1,7 +1,6 @@
-# R/distributions.R
-
-# ---- SAD(1) 2-block distribution for nimble ----
-# Define nimbleFunction objects at TOP LEVEL so nimbleCode parser can find them.
+# distributions.R
+# 自定义 SAD(1) 两块（二元 K=2）分布：密度 + 随机数
+# 不导出（internal），但必须作为包对象存在，供 nimble 通过名字找到。
 
 #' @keywords internal
 dSADmvnorm <- nimble::nimbleFunction(
@@ -74,47 +73,21 @@ rSADmvnorm <- nimble::nimbleFunction(
 
     s_prev <- 0.0
     for (jj in 1:d1) {
-      err <- rnorm(1, 0, sd = sqrt(v_sq[jj]))
-      x_minus_m <- err - phi1 * s_prev
-      out[jj] <- mean[jj] + x_minus_m
-      s_prev <- err
+      err_j <- rnorm(1, 0, sd = sqrt(v_sq[jj]))
+      x_j_minus_mean_j <- err_j - phi1 * s_prev
+      out[jj] <- mean[jj] + x_j_minus_mean_j
+      s_prev <- err_j
     }
 
     s_prev <- 0.0
     for (jj in 1:d2) {
       off <- d1 + jj
-      err <- rnorm(1, 0, sd = sqrt(v_sq[off]))
-      x_minus_m <- err - phi2 * s_prev
-      out[off] <- mean[off] + x_minus_m
-      s_prev <- err
+      err_j <- rnorm(1, 0, sd = sqrt(v_sq[off]))
+      x_j_minus_mean_j <- err_j - phi2 * s_prev
+      out[off] <- mean[off] + x_j_minus_mean_j
+      s_prev <- err_j
     }
+
     return(out)
   }
 )
-
-# ---- one-time registration helper ----
-#' @keywords internal
-.register_sad_once <- local({
-  done <- FALSE
-  function() {
-    if (done) return(invisible(TRUE))
-    nimble::registerDistributions(list(
-      dSADmvnorm = list(
-        BUGSdist = "dSADmvnorm(mean, phi1, phi2, v_sq, d1, d2)",
-        types = c(
-          "value=double(1)",
-          "mean=double(1)",
-          "phi1=double(0)",
-          "phi2=double(0)",
-          "v_sq=double(1)",
-          "d1=integer(0)",
-          "d2=integer(0)"
-        ),
-        discrete = FALSE
-      )
-    ))
-    done <<- TRUE
-    invisible(TRUE)
-  }
-})
-
