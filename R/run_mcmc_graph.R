@@ -29,7 +29,6 @@ run_mcmc_binary <- function(
   .mcmcgraph_register_sad()
   format <- match.arg(format)
   if (!requireNamespace("nimble", quietly = TRUE)) stop("Package 'nimble' is required.")
-  if (!requireNamespace("coda", quietly = TRUE)) stop("Package 'coda' is required.")
 
   set.seed(seed)
 
@@ -75,8 +74,9 @@ run_mcmc_binary <- function(
       v_sq[t] ~ dinvgamma(alpha_v, beta_v)
     }
 
-    phi1 ~ dnorm(mu_phi1, tau = 1/eta_phi1)
-    phi2 ~ dnorm(mu_phi2, tau = 1/eta_phi2)
+    # Single time-correlation parameter shared by both individuals (paper 2.3),
+    # truncated to (-1, 1) for first-order SAD stationarity (paper 3.1).
+    phi ~ T(dnorm(mu_phi, tau = 1 / eta_phi), -1, 1)
 
     for (i in 1:n) {
       z[i] ~ dcat(p[1:J])
@@ -91,8 +91,7 @@ run_mcmc_binary <- function(
     for (i in 1:n) {
       y[i, 1:d] ~ dSADmvnorm(
         mean = mu[z[i], 1:d],
-        phi1 = phi1,
-        phi2 = phi2,
+        phi = phi,
         v_sq = v_sq[1:d],
         d1 = d_single,
         d2 = d_single
@@ -109,10 +108,8 @@ run_mcmc_binary <- function(
     Z0 = Z0_binary,
     alpha_v = alpha_v,
     beta_v  = beta_v,
-    mu_phi1 = mu_phi,
-    mu_phi2 = mu_phi,
-    eta_phi1 = eta_phi,
-    eta_phi2 = eta_phi,
+    mu_phi = mu_phi,
+    eta_phi = eta_phi,
     sigma_beta = sigma_beta,
     mu_beta = mu_beta
   )
@@ -134,18 +131,18 @@ run_mcmc_binary <- function(
 
   # configure mcmc
   conf <- nimble::configureMCMC(model, print = FALSE)
-  conf$setMonitors(c("phi1","phi2","p","v_sq","beta"))
+  conf$setMonitors(c("phi","p","v_sq","beta"))
   conf$addMonitors("z")
 
   # z samplers
   conf$removeSamplers("z")
   for (i in 1:n) conf$addSampler(target = paste0("z[", i, "]"), type = "categorical")
 
-  # phi slice
-  conf$removeSamplers("phi1")
-  conf$addSampler("phi1", type = "slice", control = list(adaptive = TRUE, adaptInterval = 200))
-  conf$removeSamplers("phi2")
-  conf$addSampler("phi2", type = "slice", control = list(adaptive = TRUE, adaptInterval = 200))
+  # phi slice sampler, bounded to the truncation support (-1, 1)
+  conf$removeSamplers("phi")
+  conf$addSampler("phi", type = "slice",
+                  control = list(adaptive = TRUE, adaptInterval = 200,
+                                 lower = -1 + 1e-8, upper = 1 - 1e-8))
 
   # v_sq slice
   for (t in 1:d) {
@@ -203,40 +200,70 @@ run_mcmc_binary <- function(
   samples <- do.call(rbind, samples_list)
   coln <- colnames(samples)
 
-  # split z vs others
+  # ---- discard burn-in (paper 4.1: keep the last (1 - burnin_frac) draws) ----
+  burnin_cut <- floor(nrow(samples) * burnin_frac)
+  post <- samples[(burnin_cut + 1L):nrow(samples), , drop = FALSE]
+  S <- nrow(post)
+
+  # split z vs other parameters
   z_cols <- grep("^z\\[", coln, value = TRUE)
   other_cols <- setdiff(coln, z_cols)
-  other_samples <- samples[, other_cols, drop = FALSE]
 
-  # z_mode from last (1-burnin_frac) portion
-  z_samples <- samples[, z_cols, drop = FALSE]
-  burnin_cut <- floor(nrow(z_samples) * burnin_frac)
-  z_post <- z_samples[(burnin_cut + 1L):nrow(z_samples), , drop = FALSE]
-  z_mode <- apply(z_post, 2, function(x) {
-    tb <- table(x)
-    as.numeric(names(tb)[which.max(tb)])
-  })
-  z_uncertainty <- apply(z_post, 2, function(x) {
-    tb <- table(x)
-    1 - max(tb) / length(x)
-  })
+  # canonical, index-ordered arrays (so cluster index j is unambiguous)
+  z_post <- matrix(as.integer(round(post[, z_cols, drop = FALSE])), nrow = S)
+  # order z columns by index i
+  z_idx <- as.integer(sub("^z\\[(\\d+)\\]$", "\\1", z_cols))
+  z_post <- z_post[, order(z_idx), drop = FALSE]
 
-  # posterior subsets
-  phi_samples <- other_samples[, c("phi1","phi2"), drop = FALSE]
-  p_samples   <- other_samples[, grep("^p\\[", colnames(other_samples)), drop = FALSE]
-  v_samples   <- other_samples[, grep("^v_sq\\[", colnames(other_samples)), drop = FALSE]
-  beta_samples<- other_samples[, grep("^beta\\[", colnames(other_samples)), drop = FALSE]
+  p_cols <- grep("^p\\[", coln, value = TRUE)
+  p_idx  <- as.integer(sub("^p\\[(\\d+)\\]$", "\\1", p_cols))
+  p_post <- post[, p_cols, drop = FALSE][, order(p_idx), drop = FALSE]  # S x J
+
+  beta_cols <- grep("^beta\\[", coln, value = TRUE)
+  bx <- regmatches(beta_cols, regexec("^beta\\[(\\d+),\\s*(\\d+)\\]$", beta_cols))
+  bj <- vapply(bx, function(z) as.integer(z[2]), integer(1))
+  bk <- vapply(bx, function(z) as.integer(z[3]), integer(1))
+  beta_arr <- array(0, dim = c(S, J, P))                # S x J x P
+  for (c in seq_along(beta_cols)) beta_arr[, bj[c], bk[c]] <- post[, beta_cols[c]]
+
+  v_cols <- grep("^v_sq\\[", coln, value = TRUE)
+  v_idx  <- as.integer(sub("^v_sq\\[(\\d+)\\]$", "\\1", v_cols))
+  v_post <- post[, v_cols, drop = FALSE][, order(v_idx), drop = FALSE]  # S x d
+  phi_post <- post[, "phi", drop = FALSE]                                # S x 1
+
+  # ---- resolve label switching, then relabel cluster-indexed draws ----
+  rl <- .relabel_ecr(z_post, J = J)
+  z_post   <- rl$z
+  p_post   <- .apply_perm_vec(p_post, rl$perm)
+  beta_arr <- .apply_perm_beta(beta_arr, rl$perm)
+
+  # ---- MAP clustering, posterior probabilities and uncertainty (paper 4.1) ----
+  z_mode <- apply(z_post, 2, function(x) which.max(tabulate(x, nbins = J)))
+  cluster_prob <- t(apply(z_post, 2, function(x) tabulate(x, nbins = J) / length(x)))
+  colnames(cluster_prob) <- paste0("cluster", 1:J)
+  z_uncertainty <- 1 - apply(cluster_prob, 1, max)
+
+  # ---- posterior means on the relabeled draws (valid for plug-in BIC) ----
+  beta_hat <- apply(beta_arr, c(2, 3), mean)          # J x P
+  p_hat    <- colMeans(p_post)
+  v_hat    <- colMeans(v_post)
+  phi_hat  <- mean(phi_post)
 
   res <- list(
     clustering = z_mode,
     cluster_counts = table(z_mode),
+    cluster_prob = cluster_prob,
     cluster_uncertainty = z_uncertainty,
+    posterior_mean = list(
+      beta = beta_hat, p = p_hat, v_sq = v_hat, phi = phi_hat
+    ),
     posterior_samples = list(
-      phi = phi_samples,
-      p = p_samples,
-      v_sq = v_samples,
-      beta = beta_samples,
-      all_params = other_samples
+      phi = phi_post,
+      p = p_post,
+      v_sq = v_post,
+      beta = beta_arr,
+      z = z_post,
+      all_params = post[, other_cols, drop = FALSE]
     ),
     model_info = list(
       J = J, n = n, d_single = d_single, d_binary = d,
@@ -257,8 +284,7 @@ run_mcmc_binary <- function(
   nm <- names(last_row)
   ini <- list()
 
-  if ("phi1" %in% nm) ini$phi1 <- as.numeric(last_row["phi1"])
-  if ("phi2" %in% nm) ini$phi2 <- as.numeric(last_row["phi2"])
+  if ("phi" %in% nm) ini$phi <- as.numeric(last_row["phi"])
 
   p_names <- grep("^p\\[", nm, value = TRUE)
   if (length(p_names) > 0) {

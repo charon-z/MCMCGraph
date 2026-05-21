@@ -176,9 +176,12 @@ initialization_kmeans_binary <- function(y, J, Z0_binary) {
   d_single <- ncol(y) / 2L
   phi1 <- estimate_phi_block(y[, 1:d_single, drop = FALSE])
   phi2 <- estimate_phi_block(y[, (d_single + 1L):(2L * d_single), drop = FALSE])
+  # both individuals share a single phi (paper 2.3): start from the block average,
+  # clamped strictly inside the (-1, 1) truncation support
+  phi <- max(min((phi1 + phi2) / 2, 0.95), -0.95)
 
   p_init <- as.numeric(table(z) / length(z))
-  list(z = z, beta = beta_init, v_sq = v_sq_init, phi1 = phi1, phi2 = phi2, p = p_init)
+  list(z = z, beta = beta_init, v_sq = v_sq_init, phi = phi, p = p_init)
 }
 
 # ---- log-sum-exp ----

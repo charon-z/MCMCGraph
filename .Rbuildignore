@@ -1,2 +1,5 @@
 ^MCMCGraph\.Rproj$
 ^\.Rproj\.user$
+^\.Rhistory$
+^\.github$
+^LICENSE\.md$

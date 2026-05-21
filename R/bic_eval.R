@@ -24,6 +24,10 @@ fit_many_J <- function(x, J_grid = 2:6, ...) {
 
 #' Compute BIC from a fitted object (posterior mean plug-in)
 #'
+#' Uses the relabeled posterior means stored on the fit (so the plug-in is not
+#' corrupted by label switching). The two individuals share a single SAD
+#' time-correlation parameter phi (paper 2.3).
+#'
 #' @param fit mcmcgraph_result
 #' @param x original input data (same used in fitting)
 #' @param format "auto" | "wide" | "long"
@@ -37,55 +41,30 @@ eval_bic <- function(fit, x, format = c("auto","wide","long")) {
   d <- ncol(y)
   d_single <- dat$d_single
 
-  # posterior mean plug-in
-  samp <- fit$posterior_samples$all_params
-  mean_vec <- colMeans(samp)
-  nm <- names(mean_vec)
   J <- fit$model_info$J
   P <- fit$model_info$P
   Z0_binary <- make_Z0_binary(dat$times_single)
 
-  phi1_hat <- as.numeric(mean_vec["phi1"])
-  phi2_hat <- as.numeric(mean_vec["phi2"])
+  # relabeled posterior-mean plug-in estimates
+  pm <- fit$posterior_mean
+  phi_hat  <- as.numeric(pm$phi)
+  p_hat    <- pmax(as.numeric(pm$p), 1e-12); p_hat <- p_hat / sum(p_hat)
+  v_hat    <- pmax(as.numeric(pm$v_sq), 1e-8)
+  beta_hat <- pm$beta                       # J x P
 
-  # p
-  p_names <- grep("^p\\[", nm, value = TRUE)
-  p_hat <- numeric(J)
-  jidx <- as.integer(sub("^p\\[(\\d+)\\]$", "\\1", p_names))
-  p_hat[jidx] <- as.numeric(mean_vec[p_names])
-  p_hat <- pmax(p_hat, 1e-12); p_hat <- p_hat / sum(p_hat)
+  mu_mat <- beta_hat %*% t(Z0_binary)       # J x d
 
-  # v_sq
-  v_names <- grep("^v_sq\\[", nm, value = TRUE)
-  v_hat <- numeric(d)
-  tidx <- as.integer(sub("^v_sq\\[(\\d+)\\]$", "\\1", v_names))
-  v_hat[tidx] <- as.numeric(mean_vec[v_names])
-  v_hat <- pmax(v_hat, 1e-8)
-
-  # beta matrix J x P
-  b_names <- grep("^beta\\[", nm, value = TRUE)
-  beta_hat <- matrix(0, nrow = J, ncol = P)
-  rx <- regexec("^beta\\[(\\d+),\\s*(\\d+)\\]$", b_names)
-  parsed <- regmatches(b_names, rx)
-  for (ii in seq_along(b_names)) {
-    jj <- as.integer(parsed[[ii]][2])
-    kk <- as.integer(parsed[[ii]][3])
-    beta_hat[jj, kk] <- as.numeric(mean_vec[b_names[ii]])
-  }
-
-  mu_mat <- beta_hat %*% t(Z0_binary)  # J x d
-
-  # log density for 2-block SAD recursion
-  dSAD_log_2block <- function(xi, mean, v_sq, phi1, phi2, d_single) {
+  # log density for the 2-block SAD recursion with a single shared phi
+  dSAD_log_2block <- function(xi, mean, v_sq, phi, d_single) {
     q <- 0
     s <- 0
     for (t in 1:d_single) {
-      s <- (xi[t] - mean[t]) + phi1 * s
+      s <- (xi[t] - mean[t]) + phi * s
       q <- q + (s * s) / v_sq[t] + log(2 * pi * v_sq[t])
     }
     s <- 0
     for (t in (d_single + 1):(2 * d_single)) {
-      s <- (xi[t] - mean[t]) + phi2 * s
+      s <- (xi[t] - mean[t]) + phi * s
       q <- q + (s * s) / v_sq[t] + log(2 * pi * v_sq[t])
     }
     -0.5 * q
@@ -96,15 +75,15 @@ eval_bic <- function(fit, x, format = c("auto","wide","long")) {
     yi <- as.numeric(y[i, ])
     log_comp <- numeric(J)
     for (j in 1:J) {
-      logf <- dSAD_log_2block(yi, mu_mat[j, ], v_hat, phi1_hat, phi2_hat, d_single)
+      logf <- dSAD_log_2block(yi, mu_mat[j, ], v_hat, phi_hat, d_single)
       log_comp[j] <- log(p_hat[j]) + logf
     }
     loglik <- loglik + log_sum_exp(log_comp)
   }
 
-  # param count for your fixed order=4, K=2 setup:
-  # beta: J*10, v_sq: 2d_single, phi:2, p:(J-1)
-  k <- J * P + d + 2 + (J - 1)
+  # free parameters (fixed order = 4, K = 2):
+  # beta: J*P, v_sq: 2*d_single, phi: 1 (shared), mixing weights: J-1
+  k <- J * P + d + 1 + (J - 1)
   bic <- -2 * loglik + k * log(n)
   data.frame(J = J, loglik = loglik, BIC = bic)
 }

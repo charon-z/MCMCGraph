@@ -3,8 +3,8 @@
 set.seed(20251230)
 
 # ---- knobs ----
-n <- 100          # 小一点，跑示例很快
-d <- 16          # 示例固定16（你的方法支持任意d，示例选最常见）
+n <- 100          # small, so the example runs quickly
+d <- 16           # fixed at 16 here (the method supports any d; 16 is a common choice)
 times <- 1:d
 
 # LOP order fixed = 4 -> q = 5 -> P = 10
@@ -57,29 +57,28 @@ for (j in 1:J_true) {
 
 mu_mat <- beta_true %*% t(Z0_binary)  # J x (2d)
 
-# ---- simulate SAD-like noise by two AR(1) recursions (phi1/phi2) ----
-phi1 <- 0.35
-phi2 <- 0.20
+# ---- simulate SAD-like noise by two AR(1) recursions sharing one phi ----
+phi  <- 0.3            # single time-correlation parameter shared by both blocks
 v_sq <- rep(0.6, 2*d)  # constant variance for simplicity
 
-sim_two_block <- function(mu, phi1, phi2, v_sq, d) {
+sim_two_block <- function(mu, phi, v_sq, d) {
   stopifnot(length(mu) == 2*d, length(v_sq) == 2*d)
   y <- numeric(2*d)
 
-  # block1
+  # block 1
   s <- 0
   for (t in 1:d) {
     e <- rnorm(1, 0, sd = sqrt(v_sq[t]))
-    # reverse of your likelihood recursion; just a reasonable correlated noise
-    s <- e - phi1 * s
+    # a reasonable correlated-noise recursion (matches the SAD structure)
+    s <- e - phi * s
     y[t] <- mu[t] + s
   }
-  # block2
+  # block 2 (same phi)
   s <- 0
   for (t in 1:d) {
     idx <- d + t
     e <- rnorm(1, 0, sd = sqrt(v_sq[idx]))
-    s <- e - phi2 * s
+    s <- e - phi * s
     y[idx] <- mu[idx] + s
   }
   y
@@ -88,7 +87,7 @@ sim_two_block <- function(mu, phi1, phi2, v_sq, d) {
 Y <- matrix(0, nrow = n, ncol = 2*d)
 for (i in 1:n) {
   mu_i <- mu_mat[z_true[i], ]
-  Y[i, ] <- sim_two_block(mu_i, phi1, phi2, v_sq, d)
+  Y[i, ] <- sim_two_block(mu_i, phi, v_sq, d)
 }
 
 # ---- add informative column names ----

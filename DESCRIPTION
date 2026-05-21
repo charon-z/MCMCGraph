@@ -1,20 +1,24 @@
 Package: MCMCGraph
-Title: What the Package Does (One Line, Title Case)
+Title: Bayesian MCMC Functional Clustering for Paired Longitudinal Data
 Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Authors@R:
+    person("Ruiqi", "Zhao", email = "karongzrq@163.com", role = c("aut", "cre"))
+Description: Bayesian finite mixture clustering of paired (K = 2) longitudinal
+    trajectories. Each feature carries two individuals' time courses that are
+    clustered jointly through a shared cluster label and a cluster-specific
+    paired Legendre-polynomial mean curve. Within-individual residual
+    correlation is modelled by a structured antedependence (SAD) covariance
+    with a single shared time-correlation parameter. Inference is run with the
+    'nimble' MCMC engine (Gibbs plus slice samplers), and label switching is
+    resolved by an ECR-style relabeling step before posterior summaries and BIC
+    model selection.
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Imports: 
-    cluster,
-    coda,
-    methods,
-    mvtnorm,
+Imports:
+    stats
+Depends:
+    R (>= 3.5),
     nimble
-Depends: 
-    R (>= 3.5)
 LazyData: true
