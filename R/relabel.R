@@ -22,18 +22,17 @@
 #' @keywords internal
 #' Best permutation tau (old label j -> tau[j]) maximizing label agreement.
 #' Uses the contingency matrix C[j, l] = #{i : z[i] == j and pivot[i] == l};
-#' agreement(tau) = sum_j C[j, tau[j]]. Brute force for small J, greedy otherwise.
-.best_perm <- function(z_row, pivot, J, perms = NULL) {
+#' agreement(tau) = sum_j C[j, tau[j]]. When the full permutation matrix PM
+#' (n_perm x J) is supplied the optimum is found by a vectorized exhaustive
+#' search; otherwise a greedy assignment is used (large J).
+.best_perm <- function(z_row, pivot, J, PM = NULL) {
   C <- table(factor(z_row, levels = 1:J), factor(pivot, levels = 1:J))
-  C <- matrix(as.integer(C), nrow = J, ncol = J)
+  C <- matrix(as.numeric(C), nrow = J, ncol = J)
 
-  if (!is.null(perms)) {
-    best <- perms[[1L]]; best_score <- -Inf
-    for (tau in perms) {
-      score <- sum(C[cbind(1:J, tau)])
-      if (score > best_score) { best_score <- score; best <- tau }
-    }
-    return(best)
+  if (!is.null(PM)) {
+    scores <- numeric(nrow(PM))
+    for (j in 1:J) scores <- scores + C[j, PM[, j]]   # sum_j C[j, tau_j], vectorized
+    return(PM[which.max(scores), ])
   }
 
   # greedy fallback (J too large to enumerate): assign highest counts first
@@ -56,7 +55,7 @@
 #' @param max_iter pivot-refinement iterations.
 .relabel_ecr <- function(z_post, J, max_iter = 15L) {
   S <- nrow(z_post); n <- ncol(z_post)
-  perms <- if (J <= 7L) .all_perms(1:J) else NULL  # enumerate only when feasible
+  PM <- if (J <= 8L) do.call(rbind, .all_perms(1:J)) else NULL  # enumerate when feasible
 
   col_mode <- function(M) {
     apply(M, 2, function(col) {
@@ -71,7 +70,7 @@
   for (it in seq_len(max_iter)) {
     relabeled <- z_post
     for (s in seq_len(S)) {
-      tau <- .best_perm(z_post[s, ], pivot, J, perms)
+      tau <- .best_perm(z_post[s, ], pivot, J, PM)
       perm_mat[s, ] <- tau
       relabeled[s, ] <- tau[z_post[s, ]]
     }
