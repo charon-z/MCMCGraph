@@ -14,7 +14,9 @@ run_mcmc_binary(
   n_batch = 5L,
   burnin_frac = 0.25,
   priors = list(alpha_v = 1, beta_v = 1, mu_phi = 0.25, eta_phi = 1, sigma_beta = 0.5),
-  seed = 123
+  init = NULL,
+  seed = 123,
+  two_phi = FALSE
 )
 }
 \arguments{
@@ -36,11 +38,35 @@ run_mcmc_binary(
 
 \item{priors}{list of prior settings (optional)}
 
+\item{init}{optional initialization list with \code{z}, or complete \code{z}, \code{beta},
+\code{v_sq}, \code{phi} and \code{p}. The default \code{NULL} keeps the original k-means
+initialization.}
+
 \item{seed}{random seed}
+
+\item{two_phi}{logical. If \code{FALSE} (default), both states share a single
+SAD(1) time-correlation parameter \code{phi} (the special case phi = psi used
+for all reported analyses). If \code{TRUE}, fit the general model with a
+state-specific correlation parameter (\code{phi} for state 1, \code{psi} for state 2).}
 }
 \value{
-a list result
+An object of class \code{mcmcgraph_result}: a list with \code{clustering} (MAP
+cluster label per feature), \code{cluster_counts}, \code{cluster_prob} (n x J
+posterior cluster probabilities), \code{cluster_uncertainty} (1 - max posterior
+probability), \code{posterior_mean} (list of \code{beta}, \code{p}, \code{v_sq}, \code{phi}, \code{psi}),
+\code{posterior_samples} (post-burn-in, relabeled draws of \code{phi}, \code{psi}, \code{p},
+\code{v_sq}, \code{beta}, \code{z} and \code{all_params}; \code{psi} is \code{NULL} unless \code{two_phi}),
+\code{model_info} and \code{data_info}.
 }
 \description{
 Input can be wide (n x 2d) or long (id/ind/time/y). K is fixed at 2 and order fixed at 4.
+}
+\examples{
+\donttest{
+data(example_binary)
+fit <- run_mcmc_binary(example_binary$y, J = 3, times = example_binary$times,
+                       niter = 300, seed = 1)
+table(fit$clustering)
+head(fit$cluster_prob)
+}
 }

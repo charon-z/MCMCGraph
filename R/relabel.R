@@ -19,12 +19,14 @@
   out
 }
 
+#' Best permutation tau (old label j -> `tau[j]`) maximizing label agreement.
+#'
+#' Uses the contingency matrix `C[j, l]` = number of i with `z[i]` == j and
+#' `pivot[i]` == l; agreement(tau) = sum over j of `C[j, tau[j]]`. When the full
+#' permutation matrix PM (n_perm x J) is supplied the optimum is found by a
+#' vectorized exhaustive search; otherwise a greedy assignment is used (large J).
 #' @keywords internal
-#' Best permutation tau (old label j -> tau[j]) maximizing label agreement.
-#' Uses the contingency matrix C[j, l] = #{i : z[i] == j and pivot[i] == l};
-#' agreement(tau) = sum_j C[j, tau[j]]. When the full permutation matrix PM
-#' (n_perm x J) is supplied the optimum is found by a vectorized exhaustive
-#' search; otherwise a greedy assignment is used (large J).
+#' @noRd
 .best_perm <- function(z_row, pivot, J, PM = NULL) {
   C <- table(factor(z_row, levels = 1:J), factor(pivot, levels = 1:J))
   C <- matrix(as.numeric(C), nrow = J, ncol = J)
@@ -48,11 +50,13 @@
   tau
 }
 
-#' @keywords internal
 #' ECR relabeling. Returns the per-iteration permutations and the relabeled z.
+#'
 #' @param z_post S x n integer matrix of post-burnin cluster labels.
 #' @param J number of clusters.
 #' @param max_iter pivot-refinement iterations.
+#' @keywords internal
+#' @noRd
 .relabel_ecr <- function(z_post, J, max_iter = 15L) {
   S <- nrow(z_post); n <- ncol(z_post)
   PM <- if (J <= 8L) do.call(rbind, .all_perms(1:J)) else NULL  # enumerate when feasible
@@ -82,9 +86,11 @@
   list(perm = perm_mat, z = relabeled, pivot = pivot)
 }
 
-#' @keywords internal
 #' Apply per-iteration permutations to cluster-indexed draws.
-#' tau maps old label j -> new label tau[j]; new[tau[j]] = old[j].
+#'
+#' tau maps old label j -> new label `tau[j]`; `new[tau[j]]` = `old[j]`.
+#' @keywords internal
+#' @noRd
 .apply_perm_vec <- function(p_post, perm_mat) {
   S <- nrow(p_post); J <- ncol(p_post)
   out <- p_post
@@ -92,8 +98,9 @@
   out
 }
 
-#' @keywords internal
 #' beta_arr: S x J x P array. Relabel the J dimension per iteration.
+#' @keywords internal
+#' @noRd
 .apply_perm_beta <- function(beta_arr, perm_mat) {
   S <- dim(beta_arr)[1]
   out <- beta_arr

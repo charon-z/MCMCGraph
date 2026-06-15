@@ -19,3 +19,11 @@ list(fits, eval) where eval is data.frame(J,BIC,loglik)
 \description{
 Fit multiple J values and return BIC table
 }
+\examples{
+\donttest{
+data(example_binary)
+res <- fit_many_J(example_binary$y, J_grid = 2:4,
+                  times = example_binary$times, niter = 300)
+res$eval
+}
+}

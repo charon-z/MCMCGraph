@@ -3,7 +3,16 @@
 #' @param result mcmcgraph_result from run_mcmc_binary()
 #' @param params character vector of parameter names (regex allowed)
 #' @param max_params max number of params to plot
+#' @return (Invisibly) the character vector of parameter names that were
+#'   plotted. Called for its side effect of drawing trace and density panels.
 #' @export
+#' @examples
+#' \donttest{
+#' data(example_binary)
+#' fit <- run_mcmc_binary(example_binary$y, J = 3, times = example_binary$times,
+#'                        niter = 300, seed = 1)
+#' plot_trace_density(fit, params = c("^phi"))
+#' }
 plot_trace_density <- function(result, params = c("^phi", "^p\\["),
                                max_params = 6) {
   if (!inherits(result, "mcmcgraph_result")) stop("result must be from run_mcmc_binary().")
@@ -34,6 +43,8 @@ plot_trace_density <- function(result, params = c("^phi", "^p\\["),
 #' @param eval_list list of evaluation objects OR data.frame
 #' @return data.frame with J and BIC
 #' @export
+#' @examples
+#' as_eval_df(data.frame(J = 2:4, BIC = c(120, 100, 110), loglik = c(-50, -40, -42)))
 as_eval_df <- function(eval_list) {
   if (is.data.frame(eval_list)) return(eval_list)
   if (!is.list(eval_list)) stop("eval_list must be a list or data.frame.")
@@ -47,7 +58,11 @@ as_eval_df <- function(eval_list) {
 #' Plot BIC vs J
 #'
 #' @param eval_df data.frame with columns J and BIC
+#' @return (Invisibly) the ordered data.frame that was plotted. Called for its
+#'   side effect of drawing the BIC-versus-J curve.
 #' @export
+#' @examples
+#' plot_bic(data.frame(J = 2:5, BIC = c(140, 110, 115, 130)))
 plot_bic <- function(eval_df) {
   df <- as_eval_df(eval_df)
   df <- df[order(df$J), , drop = FALSE]

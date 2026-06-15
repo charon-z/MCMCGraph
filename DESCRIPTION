@@ -1,8 +1,10 @@
 Package: MCMCGraph
 Title: Bayesian MCMC Functional Clustering for Paired Longitudinal Data
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R:
     person("Ruiqi", "Zhao", email = "karongzrq@163.com", role = c("aut", "cre"))
+Author: Ruiqi Zhao [aut, cre]
+Maintainer: Ruiqi Zhao <karongzrq@163.com>
 Description: Bayesian finite mixture clustering of paired (K = 2) longitudinal
     trajectories. Each feature carries two individuals' time courses that are
     clustered jointly through a shared cluster label and a cluster-specific
@@ -15,10 +17,24 @@ Description: Bayesian finite mixture clustering of paired (K = 2) longitudinal
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
-Imports:
-    stats
+RoxygenNote: 8.0.0
 Depends:
     R (>= 3.5),
     nimble
+Imports:
+    graphics,
+    stats,
+    utils
 LazyData: true
+URL: https://github.com/charon-z/MCMCGraph
+BugReports: https://github.com/charon-z/MCMCGraph/issues
+Suggests:
+    clue,
+    coda,
+    e1071,
+    ggplot2,
+    igraph,
+    mclust,
+    nnet,
+    testthat (>= 3.0.0),
+    xgboost

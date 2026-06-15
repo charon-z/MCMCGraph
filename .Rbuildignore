@@ -3,3 +3,6 @@
 ^\.Rhistory$
 ^\.github$
 ^LICENSE\.md$
+^cran-comments\.md$
+^\.DS_Store$
+^.*\.tar\.gz$

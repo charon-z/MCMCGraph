@@ -21,10 +21,18 @@ as_binary_data(
 
 \item{times}{optional numeric vector length d}
 
-\item{id_col, }{ind_col, time_col, value_col used when long format}
+\item{id_col}{name of the feature-id column (long format only).}
+
+\item{ind_col}{name of the individual column; must have exactly two levels
+(long format only).}
+
+\item{time_col}{name of the time column (long format only).}
+
+\item{value_col}{name of the value column (long format only).}
 }
 \value{
-list(y, d_single, times_single)
+A list with \code{y} (the n x 2d wide numeric matrix), \code{d_single} (time
+points per individual) and \code{times_single} (the numeric time grid).
 }
 \description{
 Supported:
@@ -32,4 +40,11 @@ Supported:
 \item wide matrix/data.frame: n x (2d), ordered as ind1(t1..td), ind2(t1..td)
 \item long data.frame: columns for id, ind, time, value (ind must have exactly 2 levels)
 }
+}
+\examples{
+data(example_binary)
+dat <- as_binary_data(example_binary$y, format = "wide",
+                      times = example_binary$times)
+dim(dat$y)
+dat$d_single
 }

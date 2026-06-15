@@ -5,6 +5,13 @@
 #' @param ... passed to run_mcmc_binary (e.g., niter, thin)
 #' @return list(fits, eval) where eval is data.frame(J,BIC,loglik)
 #' @export
+#' @examples
+#' \donttest{
+#' data(example_binary)
+#' res <- fit_many_J(example_binary$y, J_grid = 2:4,
+#'                   times = example_binary$times, niter = 300)
+#' res$eval
+#' }
 fit_many_J <- function(x, J_grid = 2:6, ...) {
   fits <- vector("list", length(J_grid))
   evals <- vector("list", length(J_grid))
@@ -33,6 +40,13 @@ fit_many_J <- function(x, J_grid = 2:6, ...) {
 #' @param format "auto" | "wide" | "long"
 #' @return data.frame with J, loglik, BIC
 #' @export
+#' @examples
+#' \donttest{
+#' data(example_binary)
+#' fit <- run_mcmc_binary(example_binary$y, J = 3, times = example_binary$times,
+#'                        niter = 300, seed = 1)
+#' eval_bic(fit, x = example_binary$y, format = "wide")
+#' }
 eval_bic <- function(fit, x, format = c("auto","wide","long")) {
   format <- match.arg(format)
   dat <- as_binary_data(x, format = format, times = fit$data_info$times_single %||% NULL)

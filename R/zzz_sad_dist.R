@@ -12,6 +12,12 @@
   if (force || !exists("rSADmvnorm", envir = .GlobalEnv, inherits = FALSE)) {
     assign("rSADmvnorm", get("rSADmvnorm", envir = parent.env(environment())), envir = .GlobalEnv)
   }
+  if (force || !exists("dSADmvnorm2", envir = .GlobalEnv, inherits = FALSE)) {
+    assign("dSADmvnorm2", get("dSADmvnorm2", envir = parent.env(environment())), envir = .GlobalEnv)
+  }
+  if (force || !exists("rSADmvnorm2", envir = .GlobalEnv, inherits = FALSE)) {
+    assign("rSADmvnorm2", get("rSADmvnorm2", envir = parent.env(environment())), envir = .GlobalEnv)
+  }
   invisible(TRUE)
 }
 
@@ -30,6 +36,19 @@
         "value=double(1)",
         "mean=double(1)",
         "phi=double(0)",
+        "v_sq=double(1)",
+        "d1=integer(0)",
+        "d2=integer(0)"
+      ),
+      discrete = FALSE
+    ),
+    dSADmvnorm2 = list(
+      BUGSdist = "dSADmvnorm2(mean, phi, psi, v_sq, d1, d2)",
+      types    = c(
+        "value=double(1)",
+        "mean=double(1)",
+        "phi=double(0)",
+        "psi=double(0)",
         "v_sq=double(1)",
         "d1=integer(0)",
         "d2=integer(0)"

@@ -94,3 +94,78 @@ rSADmvnorm <- nimble::nimbleFunction(
     return(out)
   }
 )
+
+# ---------------------------------------------------------------------------
+# Two-parameter variant: block 1 (individual 1) uses `phi`, block 2 uses `psi`.
+# Selected via run_mcmc_binary(two_phi = TRUE). The shared-phi dSADmvnorm above
+# is the special case phi = psi and remains the default; all results reported
+# in the manuscript use that default. (paper Section 2.3, general model)
+# ---------------------------------------------------------------------------
+
+#' @keywords internal
+dSADmvnorm2 <- nimble::nimbleFunction(
+  run = function(
+    x    = double(1),
+    mean = double(1),
+    phi  = double(0),
+    psi  = double(0),
+    v_sq = double(1),
+    d1   = integer(0),
+    d2   = integer(0),
+    log  = integer(0, default = 0L)
+  ) {
+    returnType(double(0))
+    q <- 0.0
+
+    # Block 1 (individual 1): phi
+    s <- 0.0
+    for (jj in 1:d1) {
+      s <- (x[jj] - mean[jj]) + phi * s
+      q <- q + (s * s) / v_sq[jj] + log(2.0 * 3.141592653589793 * v_sq[jj])
+    }
+
+    # Block 2 (individual 2): psi
+    s <- 0.0
+    for (jj in 1:d2) {
+      off <- d1 + jj
+      s <- (x[off] - mean[off]) + psi * s
+      q <- q + (s * s) / v_sq[off] + log(2.0 * 3.141592653589793 * v_sq[off])
+    }
+
+    logdens <- -0.5 * q
+    if (log) return(logdens) else return(exp(logdens))
+  }
+)
+
+#' @keywords internal
+rSADmvnorm2 <- nimble::nimbleFunction(
+  run = function(
+    n    = integer(0, default = 1),
+    mean = double(1),
+    phi  = double(0),
+    psi  = double(0),
+    v_sq = double(1),
+    d1   = integer(0),
+    d2   = integer(0)
+  ) {
+    returnType(double(1))
+    if (n != 1) print("rSADmvnorm2 only supports n=1")
+    d <- d1 + d2
+    out <- numeric(d, init = TRUE)
+
+    s_prev <- 0.0
+    for (jj in 1:d1) {
+      err_j <- rnorm(1, 0, sd = sqrt(v_sq[jj]))
+      out[jj] <- mean[jj] + (err_j - phi * s_prev)
+      s_prev <- err_j
+    }
+    s_prev <- 0.0
+    for (jj in 1:d2) {
+      off <- d1 + jj
+      err_j <- rnorm(1, 0, sd = sqrt(v_sq[off]))
+      out[off] <- mean[off] + (err_j - psi * s_prev)
+      s_prev <- err_j
+    }
+    return(out)
+  }
+)

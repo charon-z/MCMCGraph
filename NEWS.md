@@ -1,0 +1,33 @@
+# MCMCGraph 0.0.0.9000 (development)
+
+First public development release accompanying the *Briefings in Bioinformatics*
+manuscript.
+
+## Features
+
+* `run_mcmc_binary()` fits Bayesian finite-mixture functional clustering of
+  paired (K = 2) longitudinal trajectories at a fixed number of clusters `J`.
+* Paired cluster means use Legendre orthogonal polynomial bases (order 4).
+* Within-individual residual correlation uses a block-diagonal SAD(1) covariance
+  with a single shared time-correlation parameter `phi` and time-specific
+  innovation variances.
+* `fit_many_J()` / `eval_bic()` / `plot_bic()` provide BIC-based model selection
+  over a grid of `J`.
+* `plot_trace_density()` provides MCMC trace and density diagnostics.
+* `as_binary_data()` accepts both wide (`n x 2d`) and long input layouts.
+* Label switching is resolved with an ECR-style relabeling step; the fit returns
+  MAP labels, posterior cluster-membership probabilities, and per-feature
+  assignment uncertainty.
+
+## Reproducibility
+
+* `inst/reproduce/` contains the full simulation suite (stability, the
+  joint/concatenation/independent ablation with two mirror scenarios, secondary
+  ablations, and convergence diagnostics) plus the LINCS dose-response workflow.
+* All simulation inputs are regenerated deterministically from stored scenario
+  parameters and fixed seeds.
+
+## Notes
+
+* This is a `0.0.0.9000` development version; the API may change before the first
+  tagged release.

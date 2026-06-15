@@ -11,9 +11,30 @@
 #' @param n_batch batch count to allow checkpoints outside package
 #' @param burnin_frac fraction discarded for z_mode (default 0.25)
 #' @param priors list of prior settings (optional)
+#' @param init optional initialization list with `z`, or complete `z`, `beta`,
+#'   `v_sq`, `phi` and `p`. The default `NULL` keeps the original k-means
+#'   initialization.
 #' @param seed random seed
-#' @return a list result
+#' @param two_phi logical. If `FALSE` (default), both states share a single
+#'   SAD(1) time-correlation parameter `phi` (the special case phi = psi used
+#'   for all reported analyses). If `TRUE`, fit the general model with a
+#'   state-specific correlation parameter (`phi` for state 1, `psi` for state 2).
+#' @return An object of class `mcmcgraph_result`: a list with `clustering` (MAP
+#'   cluster label per feature), `cluster_counts`, `cluster_prob` (n x J
+#'   posterior cluster probabilities), `cluster_uncertainty` (1 - max posterior
+#'   probability), `posterior_mean` (list of `beta`, `p`, `v_sq`, `phi`, `psi`),
+#'   `posterior_samples` (post-burn-in, relabeled draws of `phi`, `psi`, `p`,
+#'   `v_sq`, `beta`, `z` and `all_params`; `psi` is `NULL` unless `two_phi`),
+#'   `model_info` and `data_info`.
 #' @export
+#' @examples
+#' \donttest{
+#' data(example_binary)
+#' fit <- run_mcmc_binary(example_binary$y, J = 3, times = example_binary$times,
+#'                        niter = 300, seed = 1)
+#' table(fit$clustering)
+#' head(fit$cluster_prob)
+#' }
 run_mcmc_binary <- function(
     x,
     J,
@@ -24,7 +45,9 @@ run_mcmc_binary <- function(
     n_batch = 5L,
     burnin_frac = 0.25,
     priors = list(alpha_v = 1, beta_v = 1, mu_phi = 0.25, eta_phi = 1, sigma_beta = 0.5),
-    seed = 123
+    init = NULL,
+    seed = 123,
+    two_phi = FALSE
 ) {
   .mcmcgraph_register_sad()
   format <- match.arg(format)
@@ -59,45 +82,90 @@ run_mcmc_binary <- function(
   # register distribution (one-time)
   .mcmcgraph_register_sad()
 
-  # model code (P fixed=10, but we keep P for safety)
-  modelCode <- nimble::nimbleCode({
-    for (j in 1:J) alpha[j] <- 1
-    p[1:J] ~ ddirch(alpha[1:J])
+  # model code (P fixed=10, but we keep P for safety).
+  # two_phi = FALSE (default): a single time-correlation parameter phi shared by
+  #   both states (paper Section 2.3 special case phi = psi); reproduces all
+  #   results reported in the manuscript.
+  # two_phi = TRUE: the general SAD(1) model with a state-specific correlation
+  #   parameter (phi for state 1, psi for state 2) via dSADmvnorm2.
+  if (!two_phi) {
+    modelCode <- nimble::nimbleCode({
+      for (j in 1:J) alpha[j] <- 1
+      p[1:J] ~ ddirch(alpha[1:J])
 
-    for (j in 1:J) {
-      for (k in 1:P) {
-        beta[j, k] ~ dnorm(mu_beta[k], tau = 1 / sigma_beta[k]^2)
+      for (j in 1:J) {
+        for (k in 1:P) {
+          beta[j, k] ~ dnorm(mu_beta[k], tau = 1 / sigma_beta[k]^2)
+        }
       }
-    }
 
-    for (t in 1:d) {
-      v_sq[t] ~ dinvgamma(alpha_v, beta_v)
-    }
-
-    # Single time-correlation parameter shared by both individuals (paper 2.3),
-    # truncated to (-1, 1) for first-order SAD stationarity (paper 3.1).
-    phi ~ T(dnorm(mu_phi, tau = 1 / eta_phi), -1, 1)
-
-    for (i in 1:n) {
-      z[i] ~ dcat(p[1:J])
-    }
-
-    for (j in 1:J) {
       for (t in 1:d) {
-        mu[j, t] <- inprod(beta[j, 1:P], Z0[t, 1:P])
+        v_sq[t] ~ dinvgamma(alpha_v, beta_v)
       }
-    }
 
-    for (i in 1:n) {
-      y[i, 1:d] ~ dSADmvnorm(
-        mean = mu[z[i], 1:d],
-        phi = phi,
-        v_sq = v_sq[1:d],
-        d1 = d_single,
-        d2 = d_single
-      )
-    }
-  })
+      phi ~ T(dnorm(mu_phi, tau = 1 / eta_phi), -1, 1)
+
+      for (i in 1:n) {
+        z[i] ~ dcat(p[1:J])
+      }
+
+      for (j in 1:J) {
+        for (t in 1:d) {
+          mu[j, t] <- inprod(beta[j, 1:P], Z0[t, 1:P])
+        }
+      }
+
+      for (i in 1:n) {
+        y[i, 1:d] ~ dSADmvnorm(
+          mean = mu[z[i], 1:d],
+          phi = phi,
+          v_sq = v_sq[1:d],
+          d1 = d_single,
+          d2 = d_single
+        )
+      }
+    })
+  } else {
+    modelCode <- nimble::nimbleCode({
+      for (j in 1:J) alpha[j] <- 1
+      p[1:J] ~ ddirch(alpha[1:J])
+
+      for (j in 1:J) {
+        for (k in 1:P) {
+          beta[j, k] ~ dnorm(mu_beta[k], tau = 1 / sigma_beta[k]^2)
+        }
+      }
+
+      for (t in 1:d) {
+        v_sq[t] ~ dinvgamma(alpha_v, beta_v)
+      }
+
+      # State-specific correlation parameters, both truncated to (-1, 1).
+      phi ~ T(dnorm(mu_phi, tau = 1 / eta_phi), -1, 1)
+      psi ~ T(dnorm(mu_phi, tau = 1 / eta_phi), -1, 1)
+
+      for (i in 1:n) {
+        z[i] ~ dcat(p[1:J])
+      }
+
+      for (j in 1:J) {
+        for (t in 1:d) {
+          mu[j, t] <- inprod(beta[j, 1:P], Z0[t, 1:P])
+        }
+      }
+
+      for (i in 1:n) {
+        y[i, 1:d] ~ dSADmvnorm2(
+          mean = mu[z[i], 1:d],
+          phi = phi,
+          psi = psi,
+          v_sq = v_sq[1:d],
+          d1 = d_single,
+          d2 = d_single
+        )
+      }
+    })
+  }
 
   constants <- list(
     n = n,
@@ -116,8 +184,12 @@ run_mcmc_binary <- function(
 
   data_list <- list(y = as.matrix(y))
 
-  # init
-  inits <- initialization_kmeans_binary(y, J, Z0_binary)
+  # init. NULL preserves the original k-means initialization; callers can pass
+  # a neural warm-start or any other data-adaptive initial allocation.
+  inits_full <- validate_initialization_binary(init, y, J, Z0_binary)
+  init_method <- if (is.null(init)) "kmeans" else if (!is.null(init$method)) init$method else "user"
+  inits <- inits_full[c("z", "beta", "v_sq", "phi", "p")]
+  if (two_phi) inits$psi <- inits$phi   # initialize state-2 correlation at the state-1 value
 
   # build model
   model <- nimble::nimbleModel(
@@ -133,6 +205,7 @@ run_mcmc_binary <- function(
   conf <- nimble::configureMCMC(model, print = FALSE)
   conf$setMonitors(c("phi","p","v_sq","beta"))
   conf$addMonitors("z")
+  if (two_phi) conf$addMonitors("psi")
 
   # z samplers
   conf$removeSamplers("z")
@@ -143,6 +216,12 @@ run_mcmc_binary <- function(
   conf$addSampler("phi", type = "slice",
                   control = list(adaptive = TRUE, adaptInterval = 200,
                                  lower = -1 + 1e-8, upper = 1 - 1e-8))
+  if (two_phi) {
+    conf$removeSamplers("psi")
+    conf$addSampler("psi", type = "slice",
+                    control = list(adaptive = TRUE, adaptInterval = 200,
+                                   lower = -1 + 1e-8, upper = 1 - 1e-8))
+  }
 
   # v_sq slice
   for (t in 1:d) {
@@ -230,6 +309,7 @@ run_mcmc_binary <- function(
   v_idx  <- as.integer(sub("^v_sq\\[(\\d+)\\]$", "\\1", v_cols))
   v_post <- post[, v_cols, drop = FALSE][, order(v_idx), drop = FALSE]  # S x d
   phi_post <- post[, "phi", drop = FALSE]                                # S x 1
+  psi_post <- if (two_phi && "psi" %in% coln) post[, "psi", drop = FALSE] else NULL  # S x 1 (general model)
 
   # ---- resolve label switching, then relabel cluster-indexed draws ----
   rl <- .relabel_ecr(z_post, J = J)
@@ -248,6 +328,7 @@ run_mcmc_binary <- function(
   p_hat    <- colMeans(p_post)
   v_hat    <- colMeans(v_post)
   phi_hat  <- mean(phi_post)
+  psi_hat  <- if (!is.null(psi_post)) mean(psi_post) else NA_real_
 
   res <- list(
     clustering = z_mode,
@@ -255,10 +336,11 @@ run_mcmc_binary <- function(
     cluster_prob = cluster_prob,
     cluster_uncertainty = z_uncertainty,
     posterior_mean = list(
-      beta = beta_hat, p = p_hat, v_sq = v_hat, phi = phi_hat
+      beta = beta_hat, p = p_hat, v_sq = v_hat, phi = phi_hat, psi = psi_hat
     ),
     posterior_samples = list(
       phi = phi_post,
+      psi = psi_post,
       p = p_post,
       v_sq = v_post,
       beta = beta_arr,
@@ -268,7 +350,8 @@ run_mcmc_binary <- function(
     model_info = list(
       J = J, n = n, d_single = d_single, d_binary = d,
       order = 4L, P = P,
-      niter = niter, thin = thin, burnin_frac = burnin_frac
+      niter = niter, thin = thin, burnin_frac = burnin_frac,
+      init_method = init_method, two_phi = two_phi
     ),
     data_info = list(
       times_single = times_single,
@@ -285,6 +368,7 @@ run_mcmc_binary <- function(
   ini <- list()
 
   if ("phi" %in% nm) ini$phi <- as.numeric(last_row["phi"])
+  if ("psi" %in% nm) ini$psi <- as.numeric(last_row["psi"])
 
   p_names <- grep("^p\\[", nm, value = TRUE)
   if (length(p_names) > 0) {
