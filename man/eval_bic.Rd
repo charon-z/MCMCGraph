@@ -17,5 +17,15 @@ eval_bic(fit, x, format = c("auto", "wide", "long"))
 data.frame with J, loglik, BIC
 }
 \description{
-Compute BIC from a fitted object (posterior mean plug-in)
+Uses the relabeled posterior means stored on the fit (so the plug-in is not
+corrupted by label switching). The two individuals share a single SAD
+time-correlation parameter phi (paper 2.3).
+}
+\examples{
+\donttest{
+data(example_binary)
+fit <- run_mcmc_binary(example_binary$y, J = 3, times = example_binary$times,
+                       niter = 300, seed = 1)
+eval_bic(fit, x = example_binary$y, format = "wide")
+}
 }

@@ -5,7 +5,8 @@
 #'
 #' @format A list with:
 #' \describe{
-#'   \item{y}{Numeric matrix, n x (2d). Columns: i1_t01..i1_t{d}, i2_t01..i2_t{d}.}
+#'   \item{y}{Numeric matrix, n x (2d). Columns are individual 1 across time
+#'     (i1_t01 ... i1_td) followed by individual 2 across time (i2_t01 ... i2_td).}
 #'   \item{times}{Numeric vector length d.}
 #'   \item{d_single}{Integer, number of time points per individual.}
 #'   \item{order}{Integer, fixed at 4 in this package setting.}

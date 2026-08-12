@@ -9,6 +9,13 @@ plot_bic(eval_df)
 \arguments{
 \item{eval_df}{data.frame with columns J and BIC}
 }
+\value{
+(Invisibly) the ordered data.frame that was plotted. Called for its
+side effect of drawing the BIC-versus-J curve.
+}
 \description{
 Plot BIC vs J
+}
+\examples{
+plot_bic(data.frame(J = 2:5, BIC = c(140, 110, 115, 130)))
 }

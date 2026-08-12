@@ -13,9 +13,20 @@
 #' @param x matrix/data.frame
 #' @param format "auto" | "wide" | "long"
 #' @param times optional numeric vector length d
-#' @param id_col, ind_col, time_col, value_col used when long format
-#' @return list(y, d_single, times_single)
+#' @param id_col name of the feature-id column (long format only).
+#' @param ind_col name of the individual column; must have exactly two levels
+#'   (long format only).
+#' @param time_col name of the time column (long format only).
+#' @param value_col name of the value column (long format only).
+#' @return A list with `y` (the n x 2d wide numeric matrix), `d_single` (time
+#'   points per individual) and `times_single` (the numeric time grid).
 #' @export
+#' @examples
+#' data(example_binary)
+#' dat <- as_binary_data(example_binary$y, format = "wide",
+#'                       times = example_binary$times)
+#' dim(dat$y)
+#' dat$d_single
 as_binary_data <- function(
     x,
     format = c("auto", "wide", "long"),
@@ -139,12 +150,12 @@ estimate_phi_block <- function(mat) {
 # ---- Kmeans init (binary) ----
 
 #' @keywords internal
-initialization_kmeans_binary <- function(y, J, Z0_binary) {
-  set.seed(123)
-  y_scaled <- scale(y)
-  km <- stats::kmeans(y_scaled, centers = J, nstart = 30, iter.max = 100)
-  z <- km$cluster
-
+initialization_from_labels_binary <- function(y, z, J, Z0_binary) {
+  z <- as.integer(z)
+  if (length(z) != nrow(y)) stop("init labels must have length nrow(y).", call. = FALSE)
+  if (any(!is.finite(z)) || any(z < 1L) || any(z > J)) {
+    stop("init labels must be finite integers in 1:J.", call. = FALSE)
+  }
   P <- ncol(Z0_binary)  # 10
   beta_init <- matrix(0, nrow = J, ncol = P)
   v_sq_init <- rep(1.0, ncol(y))
@@ -176,9 +187,56 @@ initialization_kmeans_binary <- function(y, J, Z0_binary) {
   d_single <- ncol(y) / 2L
   phi1 <- estimate_phi_block(y[, 1:d_single, drop = FALSE])
   phi2 <- estimate_phi_block(y[, (d_single + 1L):(2L * d_single), drop = FALSE])
+  # both individuals share a single phi (paper 2.3): start from the block average,
+  # clamped strictly inside the (-1, 1) truncation support
+  phi <- max(min((phi1 + phi2) / 2, 0.95), -0.95)
 
   p_init <- as.numeric(table(z) / length(z))
-  list(z = z, beta = beta_init, v_sq = v_sq_init, phi1 = phi1, phi2 = phi2, p = p_init)
+  if (length(p_init) < J) p_init <- as.numeric(table(factor(z, levels = 1:J)) / length(z))
+  p_init <- pmax(p_init, 1e-8)
+  p_init <- p_init / sum(p_init)
+  list(z = z, beta = beta_init, v_sq = v_sq_init, phi = phi, p = p_init)
+}
+
+#' @keywords internal
+initialization_kmeans_binary <- function(y, J, Z0_binary) {
+  set.seed(123)
+  y_scaled <- scale(y)
+  km <- stats::kmeans(y_scaled, centers = J, nstart = 30, iter.max = 100)
+  initialization_from_labels_binary(y, km$cluster, J, Z0_binary)
+}
+
+#' @keywords internal
+validate_initialization_binary <- function(init, y, J, Z0_binary) {
+  if (is.null(init)) return(initialization_kmeans_binary(y, J, Z0_binary))
+  if (!is.list(init)) stop("init must be a list or NULL.", call. = FALSE)
+  if (!is.null(init$z) && (is.null(init$beta) || is.null(init$v_sq) || is.null(init$phi) || is.null(init$p))) {
+    init <- initialization_from_labels_binary(y, init$z, J, Z0_binary)
+  }
+
+  n <- nrow(y); d <- ncol(y); P <- ncol(Z0_binary)
+  need <- c("z", "beta", "v_sq", "phi", "p")
+  missing <- setdiff(need, names(init))
+  if (length(missing)) stop("init is missing: ", paste(missing, collapse = ", "), call. = FALSE)
+
+  init$z <- as.integer(init$z)
+  if (length(init$z) != n || any(init$z < 1L) || any(init$z > J)) {
+    stop("init$z must have length nrow(y) and values in 1:J.", call. = FALSE)
+  }
+  init$beta <- as.matrix(init$beta)
+  if (!identical(dim(init$beta), c(as.integer(J), as.integer(P)))) {
+    stop("init$beta must be a J x P matrix.", call. = FALSE)
+  }
+  init$v_sq <- as.numeric(init$v_sq)
+  if (length(init$v_sq) != d) stop("init$v_sq must have length ncol(y).", call. = FALSE)
+  init$v_sq <- pmax(init$v_sq, 1e-8)
+  init$phi <- as.numeric(init$phi)[1]
+  init$phi <- max(min(init$phi, 0.95), -0.95)
+  init$p <- as.numeric(init$p)
+  if (length(init$p) != J) stop("init$p must have length J.", call. = FALSE)
+  init$p <- pmax(init$p, 1e-8)
+  init$p <- init$p / sum(init$p)
+  init
 }
 
 # ---- log-sum-exp ----

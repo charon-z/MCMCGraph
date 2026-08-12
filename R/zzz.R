@@ -1,6 +1,6 @@
 .onLoad <- function(libname, pkgname) {
-  # ✅ 双保险之二：用户 library(MCMCGraph) 时就提前注册
-  # 用 getFromNamespace 避免写死包名
+  # Register the SAD distribution eagerly when the user calls library(BPFC).
+  # Use getFromNamespace so the package name is not hard-coded.
   reg <- utils::getFromNamespace(".mcmcgraph_register_sad", pkgname)
   try(reg(), silent = TRUE)
 }

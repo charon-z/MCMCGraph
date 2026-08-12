@@ -15,3 +15,6 @@ data.frame with J and BIC
 \description{
 Collect evaluation files produced by user scripts (optional helper)
 }
+\examples{
+as_eval_df(data.frame(J = 2:4, BIC = c(120, 100, 110), loglik = c(-50, -40, -42)))
+}

@@ -1,0 +1,20 @@
+citHeader("To cite BPFC in publications, please use:")
+
+bibentry(
+  bibtype  = "Manual",
+  title    = "{BPFC}: Bayesian MCMC Functional Clustering for Paired Longitudinal Data",
+  author   = person("Ruiqi", "Zhao"),
+  year     = "2026",
+  note     = "R package version 0.0.0.9000",
+  url      = "https://github.com/charon-z/BPFC",
+  textVersion = paste(
+    "Ruiqi Zhao (2026).",
+    "BPFC: Bayesian MCMC Functional Clustering for Paired Longitudinal Data.",
+    "R package version 0.0.0.9000.",
+    "https://github.com/charon-z/BPFC"
+  )
+)
+
+# NOTE: replace/augment with the journal article reference once the
+# Briefings in Bioinformatics paper is accepted (add a second bibentry of
+# bibtype = "Article" with the final volume/pages/DOI).
