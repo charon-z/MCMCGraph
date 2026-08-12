@@ -14,7 +14,7 @@
 
 src_dir <- if (nzchar(Sys.getenv("MCG_LIB_DIR"))) Sys.getenv("MCG_LIB_DIR") else
   dirname(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1]))
-if (is.na(src_dir) || !nzchar(src_dir)) src_dir <- "MCMCGraph/inst/reproduce"
+if (is.na(src_dir) || !nzchar(src_dir)) src_dir <- "BPFC/inst/reproduce"
 source(file.path(src_dir, "config.R"))
 source(file.path(src_dir, "lib_sim.R"))
 has_gg <- requireNamespace("ggplot2", quietly = TRUE)

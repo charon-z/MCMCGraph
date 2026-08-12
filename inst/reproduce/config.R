@@ -1,5 +1,5 @@
 # config.R ----------------------------------------------------------------
-# Shared configuration for the MCMCGraph reproduce suite. All driver scripts
+# Shared configuration for the BPFC reproduce suite. All driver scripts
 # (01-04) source this first. Paths are resolved relative to the project root,
 # which is taken from the environment variable MCG_ROOT or, failing that, the
 # current working directory.
@@ -7,7 +7,7 @@
 MCG_ROOT     <- Sys.getenv("MCG_ROOT", unset = normalizePath(getwd()))
 MCG_DATA_DIR <- file.path(MCG_ROOT, "benchmark", "data")     # sim_truth_K*.rds
 MCG_OUT_DIR  <- file.path(MCG_ROOT, "results", "reproduce")  # all outputs land here
-MCG_LIB_DIR  <- file.path(MCG_ROOT, "MCMCGraph", "inst", "reproduce")
+MCG_LIB_DIR  <- file.path(MCG_ROOT, "BPFC", "inst", "reproduce")
 
 dir.create(MCG_OUT_DIR, showWarnings = FALSE, recursive = TRUE)
 for (sub in c("sim1A", "sim1B", "sim1C", "sim1D", "tables", "figures"))

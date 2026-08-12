@@ -1,4 +1,4 @@
-Package: MCMCGraph
+Package: BPFC
 Title: Bayesian MCMC Functional Clustering for Paired Longitudinal Data
 Version: 0.1.0
 Authors@R:
@@ -26,8 +26,8 @@ Imports:
     stats,
     utils
 LazyData: true
-URL: https://github.com/charon-z/MCMCGraph
-BugReports: https://github.com/charon-z/MCMCGraph/issues
+URL: https://github.com/charon-z/BPFC
+BugReports: https://github.com/charon-z/BPFC/issues
 Suggests:
     clue,
     coda,

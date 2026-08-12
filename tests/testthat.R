@@ -1,4 +1,4 @@
 library(testthat)
-library(MCMCGraph)
+library(BPFC)
 
-test_check("MCMCGraph")
+test_check("BPFC")

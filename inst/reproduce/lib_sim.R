@@ -1,5 +1,5 @@
 # lib_sim.R ---------------------------------------------------------------
-# Shared simulation / inference machinery for the MCMCGraph reproduce suite.
+# Shared simulation / inference machinery for the BPFC reproduce suite.
 #
 # Provides:
 #   * Legendre (LOP) basis at arbitrary order and block layout.
@@ -16,12 +16,12 @@
 #     the "clustering unit" changes -> a clean ablation).
 #   * Baseline method wrappers (LOP k-means, SVM-RBF, XGBoost).
 #
-# Depends: nimble, MCMCGraph (for .relabel_ecr), mclust, clue; e1071/xgboost
+# Depends: nimble, BPFC (for .relabel_ecr), mclust, clue; e1071/xgboost
 # only when the supervised wrappers are called.
 
 suppressPackageStartupMessages({
   library(nimble)
-  library(MCMCGraph)
+  library(BPFC)
 })
 
 # ---- Legendre basis -------------------------------------------------------
@@ -370,7 +370,8 @@ mcg_run_sad_mcmc <- function(Y, J, blocks, basis, v_mode = c("pertime", "single"
                              fix_phi = NULL, niter = 8000L, thin = 1L,
                              burnin_frac = 0.25, seed = 1L, init_z = NULL,
                              priors = list(alpha_v = 1, beta_v = 1, mu_phi = 0.25,
-                                           eta_phi = 1, sigma_beta = 0.5)) {
+                                           eta_phi = 1, sigma_beta = 0.5),
+                             trace_draws = 0L) {
   v_mode <- match.arg(v_mode)
   mcg_register_sadblocks()
   set.seed(seed)
@@ -494,15 +495,37 @@ mcg_run_sad_mcmc <- function(Y, J, blocks, basis, v_mode = c("pertime", "single"
   samples <- nimble::runMCMC(cmcmc, niter = niter, nburnin = 0, thin = thin,
                              progressBar = FALSE, samplesAsCodaMCMC = FALSE)
   coln <- colnames(samples)
+  trace_draws <- max(0L, as.integer(trace_draws))
+  trace_iterations_full <- integer()
+  trace_samples_full <- NULL
+  if (trace_draws > 0L) {
+    n_trace <- min(trace_draws, nrow(samples))
+    trace_rows <- unique(as.integer(round(seq(
+      1L, nrow(samples), length.out = n_trace
+    ))))
+    trace_parameter_columns <- !grepl("^z\\[", coln)
+    trace_iterations_full <- trace_rows * thin
+    trace_samples_full <- samples[
+      trace_rows, trace_parameter_columns, drop = FALSE
+    ]
+  }
   cut <- floor(nrow(samples) * burnin_frac)
   post <- samples[(cut + 1L):nrow(samples), , drop = FALSE]
   S <- nrow(post)
   z_cols <- grep("^z\\[", coln, value = TRUE)
   z_idx <- as.integer(sub("^z\\[(\\d+)\\]$", "\\1", z_cols))
   z_post <- matrix(as.integer(round(post[, z_cols, drop = FALSE])), nrow = S)[, order(z_idx), drop = FALSE]
-  rl <- MCMCGraph:::.relabel_ecr(z_post, J = J)
+  rl <- BPFC:::.relabel_ecr(z_post, J = J)
   z_mode <- apply(rl$z, 2, function(x) which.max(tabulate(x, nbins = J)))
-  list(clustering = z_mode, samples = post, z_post = rl$z, model_info = list(J = J, n = n, d = d))
+  list(
+    clustering = z_mode,
+    samples = post,
+    z_post = rl$z,
+    relabel_perm = rl$perm,
+    trace_iterations_full = trace_iterations_full,
+    trace_samples_full = trace_samples_full,
+    model_info = list(J = J, n = n, d = d)
+  )
 }
 
 # ---- baseline method wrappers --------------------------------------------

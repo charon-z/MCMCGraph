@@ -1,7 +1,7 @@
-# MCMCGraph
+# BPFC
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/charon-z/MCMCGraph/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/charon-z/MCMCGraph/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/charon-z/BPFC/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/charon-z/BPFC/actions/workflows/R-CMD-check.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 <!-- badges: end -->
 
@@ -9,7 +9,7 @@ Bayesian MCMC functional clustering for paired (K = 2) longitudinal data with a
 structured antedependence (SAD) covariance, built on the `nimble` backend.
 
 Each feature (e.g. a SNP effect) carries the longitudinal trajectories of **two
-individuals**. Instead of clustering each individual separately, MCMCGraph
+individuals**. Instead of clustering each individual separately, BPFC
 clusters the two trajectories **jointly**:
 
 - a single cluster label `z_i` is shared by both individuals of a feature;
@@ -28,7 +28,7 @@ posterior cluster probabilities and BIC-based model selection.
 
 ```r
 install.packages("remotes")
-remotes::install_github("charon-z/MCMCGraph")
+remotes::install_github("charon-z/BPFC")
 ```
 
 ### System requirements
@@ -52,7 +52,7 @@ remotes::install_github("charon-z/MCMCGraph")
 ## Quick start
 
 ```r
-library(MCMCGraph)
+library(BPFC)
 
 # Example data: a list with $y (n x 2d wide matrix), $times, $d_single, $truth
 data(example_binary)
@@ -125,14 +125,14 @@ order, priors) and the convergence diagnostics.
 # from the project root (contains benchmark/data/sim_truth_K*.rds)
 export MCG_ROOT=$(pwd)
 # full study, 6 workers (checkpointed + resumable; many hours):
-bash MCMCGraph/inst/reproduce/run_full.sh 6
+bash BPFC/inst/reproduce/run_full.sh 6
 # or a quick validation pass:
-MCG_R=5 MCG_NITER=3000 bash MCMCGraph/inst/reproduce/run_full.sh 6
+MCG_R=5 MCG_NITER=3000 bash BPFC/inst/reproduce/run_full.sh 6
 # then build tables and figures:
-Rscript MCMCGraph/inst/reproduce/02_make_tables.R
-Rscript MCMCGraph/inst/reproduce/03_make_figures.R
+Rscript BPFC/inst/reproduce/02_make_tables.R
+Rscript BPFC/inst/reproduce/03_make_figures.R
 # real-data workflow (BIC -> clustering -> module network):
-Rscript MCMCGraph/inst/reproduce/04_real_data_analysis.R   # MCG_DATASET=example|lincs|smillie
+Rscript BPFC/inst/reproduce/04_real_data_analysis.R   # MCG_DATASET=example|lincs|smillie
 ```
 
 Simulation data are regenerated deterministically from the stored scenario

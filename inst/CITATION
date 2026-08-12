@@ -1,17 +1,17 @@
-citHeader("To cite MCMCGraph in publications, please use:")
+citHeader("To cite BPFC in publications, please use:")
 
 bibentry(
   bibtype  = "Manual",
-  title    = "{MCMCGraph}: Bayesian MCMC Functional Clustering for Paired Longitudinal Data",
+  title    = "{BPFC}: Bayesian MCMC Functional Clustering for Paired Longitudinal Data",
   author   = person("Ruiqi", "Zhao"),
   year     = "2026",
   note     = "R package version 0.0.0.9000",
-  url      = "https://github.com/charon-z/MCMCGraph",
+  url      = "https://github.com/charon-z/BPFC",
   textVersion = paste(
     "Ruiqi Zhao (2026).",
-    "MCMCGraph: Bayesian MCMC Functional Clustering for Paired Longitudinal Data.",
+    "BPFC: Bayesian MCMC Functional Clustering for Paired Longitudinal Data.",
     "R package version 0.0.0.9000.",
-    "https://github.com/charon-z/MCMCGraph"
+    "https://github.com/charon-z/BPFC"
   )
 )
 

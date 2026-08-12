@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # 04_real_data_analysis.R -------------------------------------------------
-# End-to-end real-data workflow with the published MCMCGraph functions:
+# End-to-end real-data workflow with the published BPFC functions:
 #   1. load a paired longitudinal matrix (n x 2d)
 #   2. BIC-based selection of the number of clusters J  (fit_many_J / eval_bic)
 #   3. final clustering at the selected J
@@ -16,10 +16,10 @@
 # full preprocessing. The example path is what the Quick Start in the README
 # exercises, so a reviewer can reproduce the workflow without the big files.
 
-suppressPackageStartupMessages(library(MCMCGraph))
+suppressPackageStartupMessages(library(BPFC))
 src_dir <- if (nzchar(Sys.getenv("MCG_LIB_DIR"))) Sys.getenv("MCG_LIB_DIR") else
   dirname(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1]))
-if (is.na(src_dir) || !nzchar(src_dir)) src_dir <- "MCMCGraph/inst/reproduce"
+if (is.na(src_dir) || !nzchar(src_dir)) src_dir <- "BPFC/inst/reproduce"
 source(file.path(src_dir, "config.R"))
 OUT <- file.path(MCG_OUT_DIR, "real"); dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
 
@@ -42,7 +42,7 @@ load_dataset <- function(name) {
     Y <- as.matrix(read.delim(f, check.names = FALSE, row.names = 1))
     return(list(Y = Y, times = seq_len(ncol(Y) / 2), label = "Smillie UC"))
   }
-  data("example_binary", package = "MCMCGraph", envir = environment())
+  data("example_binary", package = "BPFC", envir = environment())
   list(Y = example_binary$y, times = example_binary$times, label = "example_binary (toy)")
 }
 
@@ -50,18 +50,18 @@ ds <- load_dataset(dataset)
 message(sprintf("[04] dataset=%s  n=%d  d=%d", ds$label, nrow(ds$Y), ncol(ds$Y)))
 
 ## 1-2. BIC sweep over J --------------------------------------------------
-sweep <- MCMCGraph::fit_many_J(ds$Y, J_grid = J_grid, times = ds$times, niter = niter)
+sweep <- BPFC::fit_many_J(ds$Y, J_grid = J_grid, times = ds$times, niter = niter)
 ev <- sweep$eval
 write.csv(ev, file.path(OUT, sprintf("%s_BIC.csv", dataset)), row.names = FALSE)
 bestJ <- ev$J[which.min(ev$BIC)]
 message(sprintf("[04] BIC-selected J = %d", bestJ))
 
 pdf(file.path(OUT, sprintf("%s_BIC.pdf", dataset)), width = 6, height = 4.5)
-MCMCGraph::plot_bic(ev); dev.off()
+BPFC::plot_bic(ev); dev.off()
 
 ## 3. final clustering at best J ------------------------------------------
 fit <- sweep$fits[[paste0("J", bestJ)]]
-if (is.null(fit)) fit <- MCMCGraph::run_mcmc_binary(ds$Y, J = bestJ, times = ds$times, niter = niter)
+if (is.null(fit)) fit <- BPFC::run_mcmc_binary(ds$Y, J = bestJ, times = ds$times, niter = niter)
 
 clusters <- data.frame(feature = rownames(ds$Y), cluster = fit$clustering,
                        fit$cluster_prob, uncertainty = fit$cluster_uncertainty)
@@ -69,14 +69,14 @@ write.csv(clusters, file.path(OUT, sprintf("%s_J%d_clusters.csv", dataset, bestJ
 
 ## 4. cluster mean curves -------------------------------------------------
 d_single <- fit$model_info$d_single
-Z0 <- MCMCGraph:::make_Z0_binary(ds$times)
+Z0 <- BPFC:::make_Z0_binary(ds$times)
 mu <- fit$posterior_mean$beta %*% t(Z0)        # J x 2d
 write.csv(data.frame(cluster = seq_len(bestJ), mu),
           file.path(OUT, sprintf("%s_J%d_mean_curves.csv", dataset, bestJ)), row.names = FALSE)
 
 ## 5. trace/density diagnostics -------------------------------------------
 pdf(file.path(OUT, sprintf("%s_J%d_trace.pdf", dataset, bestJ)), width = 7, height = 7)
-MCMCGraph::plot_trace_density(fit, params = c("^phi", "^p\\[")); dev.off()
+BPFC::plot_trace_density(fit, params = c("^phi", "^p\\[")); dev.off()
 
 ## 6. module-level network graph (clusters linked by mean-curve similarity)-
 S <- cor(t(mu))                                 # J x J correlation of mean curves

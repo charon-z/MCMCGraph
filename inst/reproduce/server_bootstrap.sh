@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # server_bootstrap.sh -----------------------------------------------------
-# Disconnect-proof launcher for the full MCMCGraph Task-1 study on a remote
+# Disconnect-proof launcher for the full BPFC Task-1 study on a remote
 # host. Run this ON THE SERVER (e.g. rqzhao@222.28.118.18:~/workdir/MCMC).
 # It detaches with setsid+nohup so it keeps running after you log out, and is
 # checkpointed/resumable, so re-running just continues where it stopped.
@@ -15,7 +15,7 @@
 set -u
 ACTION="${1:-run}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# bundle layout: <root>/MCMCGraph/...  and  <root>/benchmark/data/sim_truth_*.rds
+# bundle layout: <root>/BPFC/...  and  <root>/benchmark/data/sim_truth_*.rds
 ROOT="$(cd "$HERE/../../.." && pwd)"
 export MCG_ROOT="$ROOT"
 export MCG_LIB_DIR="$HERE"
@@ -31,7 +31,7 @@ deps() {
     for (p in need) if (!requireNamespace(p, quietly=TRUE)) install.packages(p)
     cat("deps:\n"); print(sapply(need, function(p) requireNamespace(p, quietly=TRUE)))
   '
-  R CMD INSTALL "$ROOT/MCMCGraph"
+  R CMD INSTALL "$ROOT/BPFC"
 }
 
 case "$ACTION" in

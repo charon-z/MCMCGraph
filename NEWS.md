@@ -1,4 +1,4 @@
-# MCMCGraph 0.0.0.9000 (development)
+# BPFC 0.1.0
 
 First public development release accompanying the *Briefings in Bioinformatics*
 manuscript.

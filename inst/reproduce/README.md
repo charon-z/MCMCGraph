@@ -37,9 +37,9 @@ ablations, convergence) and the real-data workflow.
 
 ```bash
 export MCG_ROOT=/path/to/project        # contains benchmark/data/sim_truth_K*.rds
-bash MCMCGraph/inst/reproduce/run_full.sh 3      # 3 parallel workers
-Rscript MCMCGraph/inst/reproduce/02_make_tables.R
-Rscript MCMCGraph/inst/reproduce/03_make_figures.R
+bash BPFC/inst/reproduce/run_full.sh 3      # 3 parallel workers
+Rscript BPFC/inst/reproduce/02_make_tables.R
+Rscript BPFC/inst/reproduce/03_make_figures.R
 ```
 
 Scale is set inside `run_full.sh` (and overridable via `MCG_R` / `MCG_NITER`).

@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
 # 01_run_simulations.R ----------------------------------------------------
-# Runs every simulation in Task 1 of the MCMCGraph paper:
+# Runs every simulation in Task 1 of the BPFC paper:
 #   1A  multi-replicate stability      (5 methods, EM/MCMC multi-init)
 #   1B  joint vs concatenation vs independent ablation + mirror scenario
 #   1C  secondary ablations            (covariance form, LOP order, priors)
 #   1D  convergence diagnostics        (multi-chain Rhat / ESS / traces)
 #
-# Dependencies : MCMCGraph, nimble, mclust, clue, e1071, xgboost, coda
+# Dependencies : BPFC, nimble, mclust, clue, e1071, xgboost, coda
 # Inputs       : benchmark/data/sim_truth_K{3,5,8}.rds (scenario parameters)
 # Outputs      : results/reproduce/sim1{A,B,C,D}/*.rds  (one file per cell)
 #
@@ -27,7 +27,7 @@ suppressPackageStartupMessages({ library(coda) })
 here <- function(...) file.path(Sys.getenv("MCG_LIB_DIR", unset = "."), ...)
 src_dir <- if (nzchar(Sys.getenv("MCG_LIB_DIR"))) Sys.getenv("MCG_LIB_DIR") else
   dirname(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[1]))
-if (is.na(src_dir) || !nzchar(src_dir)) src_dir <- "MCMCGraph/inst/reproduce"
+if (is.na(src_dir) || !nzchar(src_dir)) src_dir <- "BPFC/inst/reproduce"
 source(file.path(src_dir, "config.R"))
 source(file.path(src_dir, "lib_metrics.R"))
 source(file.path(src_dir, "lib_sim.R"))
@@ -54,7 +54,7 @@ run_1A_cell <- function(K, rep) {
   rows <- list()
 
   # MCMC (published function), single kmeans init
-  fit <- MCMCGraph::run_mcmc_binary(Y, J = K, times = par$times,
+  fit <- BPFC::run_mcmc_binary(Y, J = K, times = par$times,
                                     niter = MCG_NITER, thin = 1, seed = seed)
   rows[["mcmc"]] <- row_of(K, rep, "MCMC", "joint",
                            mcg_metrics(zt, fit$clustering), seed)

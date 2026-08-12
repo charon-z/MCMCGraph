@@ -12,7 +12,7 @@
 
 2. **Assignment to the global environment** in `R/zzz_sad_dist.R`
    (`dSADmvnorm`, `rSADmvnorm`).
-   This is intentional and required. MCMCGraph registers a user-defined
+   This is intentional and required. BPFC registers a user-defined
    distribution (the structured-antedependence multivariate normal) with the
    `nimble` MCMC engine. During model compilation, `nimble` resolves the
    density and random-generation functions *by name* from the global
