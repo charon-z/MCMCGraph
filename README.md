@@ -159,6 +159,11 @@ blocks and categorical levels. The EM comparator (no compilation) is well under
 a minute even with 10 random starts. `run_full.sh` parallelises across
 replicates; the full R = 50 study is on the order of 100 core-hours.
 
+A resumable single-thread benchmark for BPFC-MCMC, BPFC-EM, Gaussian mixtures,
+K-means and agglomerative clustering is provided in
+[`inst/benchmark/`](inst/benchmark). It records end-to-end elapsed time and peak
+resident memory in separate fresh R processes.
+
 ## License
 
 MIT. See [LICENSE.md](LICENSE.md).

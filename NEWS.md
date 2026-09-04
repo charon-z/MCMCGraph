@@ -3,6 +3,9 @@
 - Added `plot_mixing_trace()` for publication-ready mixing-proportion MCMC
   diagnostics with explicit axis labels, mathematical component notation,
   running means and posterior means.
+- Added a resumable computational-performance benchmark covering BPFC-MCMC,
+  BPFC-EM, Gaussian mixtures, K-means and agglomerative clustering, with
+  end-to-end timing and peak-memory recording.
 - Declared testthat edition 3.
 
 # BPFC 0.1.0
