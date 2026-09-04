@@ -71,6 +71,9 @@ fit$cluster_uncertainty # 1 - max posterior probability per feature
 
 # Trace / density diagnostics
 plot_trace_density(fit, params = c("^phi", "^p\\["))
+
+# Readable mixing-proportion traces for all components
+plot_mixing_trace(fit)
 ```
 
 ## Choosing the number of clusters (BIC)
@@ -111,6 +114,7 @@ plot_bic(res$eval)  # BIC vs J
 | `eval_bic()` | Posterior-mean plug-in BIC for a fitted object |
 | `fit_many_J()` | Sweep a grid of J and return fits + a BIC table |
 | `plot_bic()` | Plot BIC versus J |
+| `plot_mixing_trace()` | Plot mixing-proportion traces with explicit axis labels and mathematical component notation |
 | `plot_trace_density()` | Trace + density diagnostics for selected parameters |
 | `as_eval_df()` | Normalise evaluation results into a `J`/`BIC` data frame |
 

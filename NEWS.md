@@ -1,6 +1,13 @@
+# BPFC 0.1.1
+
+- Added `plot_mixing_trace()` for publication-ready mixing-proportion MCMC
+  diagnostics with explicit axis labels, mathematical component notation,
+  running means and posterior means.
+- Declared testthat edition 3.
+
 # BPFC 0.1.0
 
-First public development release accompanying the *Briefings in Bioinformatics*
+First public release accompanying the *Briefings in Bioinformatics*
 manuscript.
 
 ## Features
@@ -26,8 +33,3 @@ manuscript.
   ablations, and convergence diagnostics) plus the LINCS dose-response workflow.
 * All simulation inputs are regenerated deterministically from stored scenario
   parameters and fixed seeds.
-
-## Notes
-
-* This is a `0.0.0.9000` development version; the API may change before the first
-  tagged release.

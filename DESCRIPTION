@@ -1,6 +1,6 @@
 Package: BPFC
 Title: Bayesian MCMC Functional Clustering for Paired Longitudinal Data
-Version: 0.1.0
+Version: 0.1.1
 Authors@R:
     person("Ruiqi", "Zhao", email = "karongzrq@163.com", role = c("aut", "cre"))
 Author: Ruiqi Zhao [aut, cre]
@@ -38,3 +38,4 @@ Suggests:
     nnet,
     testthat (>= 3.0.0),
     xgboost
+Config/testthat/edition: 3
