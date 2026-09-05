@@ -26,8 +26,12 @@ utils::write.csv(
   row.names = FALSE
 )
 
+# `interaction()` drops rows containing NA. Comparator methods do not have an
+# MCMC iteration count, so represent that value explicitly in the grouping key
+# instead of silently omitting their results from the summary table.
+niter_key <- ifelse(is.na(raw$niter), "not_applicable", as.character(raw$niter))
 group_key <- interaction(
-  raw$method, raw$dataset, raw$n, raw$dimensions, raw$J, raw$niter,
+  raw$method, raw$dataset, raw$n, raw$dimensions, raw$J, niter_key,
   drop = TRUE, lex.order = TRUE
 )
 groups <- split(raw, group_key)

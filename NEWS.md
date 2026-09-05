@@ -6,6 +6,8 @@
 - Added a resumable computational-performance benchmark covering BPFC-MCMC,
   BPFC-EM, Gaussian mixtures, K-means and agglomerative clustering, with
   end-to-end timing and peak-memory recording.
+- Fixed benchmark summarization so methods without an MCMC iteration count are
+  retained in the aggregated performance table.
 - Declared testthat edition 3.
 
 # BPFC 0.1.0
